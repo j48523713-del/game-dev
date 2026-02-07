@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gundam Lab: Pro Gizmo Controls</title>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; background: #1c1c1e; color: #d1d1d6; font-family: sans-serif; overflow: hidden; }
+        #toolbar { position: absolute; left: 20px; top: 20px; z-index: 10; display: flex; flex-direction: column; gap: 10px; }
+        #inspector { position: absolute; right: 20px; top: 20px; width: 220px; background: #2c2c2e; padding: 20px; border-radius: 12px; border: 1px solid #444; }
+        .btn { background: #3a3a3c; color: white; border: 1px solid #555; padding: 10px; cursor: pointer; border-radius: 6px; font-weight: bold; }
+        .btn:hover { background: #4a4a4c; }
+        .active { border-color: #0a84ff; color: #0a84ff; }
+        .label { font-size: 11px; color: #888; margin-bottom: 5px; display: block; }
+        kbd { background: #444; padding: 2px 5px; border-radius: 3px; font-size: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="toolbar">
+    <button class="btn" onclick="spawnBlock()">+ New Part</button>
+    <hr style="width:100%; border:0; border-top:1px solid #444;">
+    <button id="moveMode" class="btn active" onclick="setMode('translate')">Move [W]</button>
+    <button id="scaleMode" class="btn" onclick="setMode('scale')">Stretch [R]</button>
+    <div style="font-size: 11px; color: #888; padding: 5px;">
+        <kbd>W</kbd> Move Arrows<br>
+        <kbd>R</kbd> Stretch Boxes
+    </div>
+</div>
+
+<div id="inspector" class="hidden">
+    <span class="label">COLOR</span>
+    <input type="color" id="blockColor" style="width:100%; height:30px; border:none; background:none; cursor:pointer;">
+    <button class="btn" onclick="deleteBlock()" style="width:100%; margin-top:20px; color:#ff453a; border-color:#ff453a;">Delete</button>
+</div>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { TransformControls } from 'three/addons/controls/TransformControls.js';
+
+    // --- SCENE SETUP ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1c1c1e);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const orbit = new OrbitControls(camera, renderer.domElement);
+    camera.position.set(60, 60, 100);
+
+    // --- GIZMO CONTROLS ---
+    const transformControl = new TransformControls(camera, renderer.domElement);
+    scene.add(transformControl);
+
+    // Stop camera movement when using the gizmo
+    transformControl.addEventListener('dragging-changed', (event) => {
+        orbit.enabled = !event.value;
+    });
+
+    // --- LIGHTS ---
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(50, 100, 50);
+    scene.add(light);
+
+    // --- GRAY EXOSKELETON ---
+    const exoMat = new THREE.MeshStandardMaterial({ color: 0x444444, transparent: true, opacity: 0.3 });
+    const addExo = (w, h, d, x, y, z) => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), exoMat);
+        m.position.set(x, y, z);
+        scene.add(m);
+    };
+    addExo(25, 35, 20, 0, 40, 0); // Torso
+    addExo(12, 12, 12, 0, 65, 0); // Head
+    addExo(10, 40, 10, -25, 40, 0); // Arms
+    addExo(10, 40, 10, 25, 40, 0);
+
+    // --- BUILDING LOGIC ---
+    let selectedObject = null;
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    window.spawnBlock = function() {
+        const mat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.5, roughness: 0.5 });
+        const block = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), mat);
+        block.position.set(Math.random()*20, 10, Math.random()*20);
+        scene.add(block);
+        selectObject(block);
+    };
+
+    window.setMode = function(mode) {
+        transformControl.setMode(mode);
+        document.getElementById('moveMode').classList.toggle('active', mode === 'translate');
+        document.getElementById('scaleMode').classList.toggle('active', mode === 'scale');
+    };
+
+    function selectObject(obj) {
+        selectedObject = obj;
+        transformControl.attach(obj);
+        document.getElementById('inspector').classList.remove('hidden');
+        document.getElementById('blockColor').value = "#" + obj.material.color.getHexString();
+    }
+
+    // Click to select parts
+    window.addEventListener('mousedown', (e) => {
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(scene.children.filter(c => c.type === "Mesh" && c.material !== exoMat));
+        if (intersects.length > 0) selectObject(intersects[0].object);
+    });
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'w') setMode('translate');
+        if (e.key.toLowerCase() === 'r') setMode('scale');
+    });
+
+    document.getElementById('blockColor').addEventListener('input', (e) => {
+        if(selectedObject) selectedObject.material.color.set(e.target.value);
+    });
+
+    window.deleteBlock = function() {
+        if(selectedObject) {
+            transformControl.detach();
+            scene.remove(selectedObject);
+            document.getElementById('inspector').classList.add('hidden');
+        }
+    };
+
+    function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+    }
+    animate();
+</script>
+</body>
+</html>

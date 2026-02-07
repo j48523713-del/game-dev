@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Maker - Operation Cyberspace</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #222; color: white; font-family: monospace; }
+        #ui-container {
+            position: absolute; top: 0; right: 0; width: 250px; height: 100%;
+            background: rgba(0,0,0,0.9); padding: 20px; box-sizing: border-box;
+            border-left: 1px solid #0f0;
+        }
+        button {
+            width: 100%; padding: 10px; margin-top: 10px;
+            background: #004400; color: #0f0; border: 1px solid #0f0; cursor: pointer;
+            font-family: monospace; font-size: 14px;
+        }
+        button:hover { background: #006600; }
+        button.active { background: #0f0; color: black; }
+        .info { font-size: 12px; color: #aaa; margin-top: 20px; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+</head>
+<body>
+    <div id="ui-container">
+        <h2 style="color:#0f0; border-bottom:1px solid #0f0;">MAP MAKER</h2>
+        <p>Tool: <span id="tool-display" style="color:yellow">WALL</span></p>
+        <button onclick="setTool(1)" class="active" id="btn-wall">WALL (1)</button>
+        <button onclick="setTool(0)" id="btn-erase">ERASE (0)</button>
+        <button onclick="setTool(2)" id="btn-obs1">OBSTACLE 1 (2)</button>
+        <button onclick="setTool(3)" id="btn-obs2">OBSTACLE 2 (3)</button>
+        <hr style="border-color:#444">
+        <button onclick="saveMap()">[ SAVE MAP ]</button>
+        <button onclick="window.location.href='index.html'" style="border-color:red; color:red;">EXIT</button>
+        <div class="info">
+            Controls:<br>
+            - Click/Drag to paint<br>
+            - Arrow Keys to Pan<br>
+            - Scroll to Zoom
+        </div>
+    </div>
+    <script src="map_maker.js"></script>
+</body>
+</html>

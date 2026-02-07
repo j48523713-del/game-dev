@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operation Cyberspace</title>
+    <style>
+      body { padding: 0; margin: 0; overflow: hidden; background: black; }
+      canvas { display: block; }
+      #ui-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        display: none; /* Hidden by default */
+        font-family: 'Courier New', Courier, monospace;
+        user-select: none;
+      }
+      .screen-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        pointer-events: none;
+        color: white;
+        font-family: 'Courier New', Courier, monospace;
+        text-align: center;
+        display: none;
+        text-shadow: 2px 2px 0 #000;
+      }
+      .blink {
+        animation: blinker 1s linear infinite;
+      }
+      @keyframes blinker {
+        50% { opacity: 0; }
+      }
+      h1 { font-size: 50px; margin: 10px; }
+      h2 { font-size: 30px; margin: 10px; }
+      p { font-size: 20px; margin: 10px; }
+      #hud-stats {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        color: white;
+      }
+      .bar-container {
+        width: 250px;
+        height: 20px;
+        background: rgba(0, 0, 0, 0.5);
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        margin-bottom: 5px;
+        position: relative;
+      }
+      .bar-fill {
+        height: 100%;
+        width: 100%;
+        transition: width 0.1s;
+      }
+      .bar-text {
+        position: absolute;
+        top: 0;
+        left: 5px;
+        line-height: 20px;
+        font-size: 14px;
+        text-shadow: 1px 1px 0 #000;
+      }
+      #hp-fill { background-color: #ff3333; }
+      #en-fill { background-color: #33ffff; }
+      #weapon-info {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        text-align: right;
+        color: white;
+      }
+      #crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #0f0;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+      }
+      #crosshair::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 4px;
+        height: 4px;
+        background: #0f0;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+      }
+      input {
+        display: block;
+        margin: 10px auto;
+        padding: 10px;
+        font-family: 'Courier New', Courier, monospace;
+        background: black;
+        color: white;
+        border: 1px solid white;
+        width: 200px;
+        pointer-events: auto;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 5px;
+        font-family: 'Courier New', Courier, monospace;
+        background: #333;
+        color: white;
+        border: 1px solid white;
+        cursor: pointer;
+        pointer-events: auto;
+      }
+      button:hover { background: #555; }
+      #leaderboard {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        text-align: right;
+        font-size: 14px;
+        color: gold;
+      }
+      #travel-layer {
+        display: none;
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 20, 0.9);
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 200;
+        color: white;
+      }
+    </style>
+    <link rel="icon" href="data:,">
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="p5.sound.min.js"></script>
+    
+    <!-- Game Scripts -->
+    <script src="game.js"></script>
+    <script type="module" src="sketch.js"></script>
+  </head>
+  <body>
+    <div id="login-layer" class="screen-layer" style="display: flex;">
+      <h1>LOGIN</h1>
+      <input type="text" id="username-input" placeholder="Username">
+      <input type="password" id="password-input" placeholder="Password">
+      <div>
+        <button id="btn-login">LOGIN</button>
+        <button id="btn-signup">SIGN UP</button>
+      </div>
+      <p id="login-msg" style="color: yellow; font-size: 14px;"></p>
+    </div>
+    <div id="menu-layer" class="screen-layer">
+      <h1>CYBERSPACE</h1>
+      <p>Made By Winter And Us productions</p>
+      <p class="blink">Press Enter to Start</p>
+      <div id="leaderboard">Loading Leaderboard...</div>
+    </div>
+    <div id="lobby-layer" class="screen-layer">
+      <h1>LOBBY</h1>
+      <h2 id="lobby-suit-name">&lt; GUNDAM &gt;</h2>
+      <div id="lobby-stats"></div>
+      <p class="blink">Press Enter to Deploy</p>
+    </div>
+    <div id="travel-layer">
+      <h1>STELLAR NAVIGATION</h1>
+      <p>Select Destination:</p>
+      <button onclick="window.travelTo('TERRA')">PLANET TERRA (Home)</button>
+      <button onclick="window.travelTo('MARS')">PLANET MARS (Hostile)</button>
+      <button onclick="window.travelTo('SPACE')">DEEP SPACE (Free Roam)</button>
+      <button onclick="window.closeTravelMenu()" style="margin-top: 20px; border-color: red; color: red;">CANCEL</button>
+    </div>
+    <div id="ui-layer">
+      <div id="crosshair"></div>
+      <div id="hud-stats">
+        <div class="bar-container">
+          <div id="hp-fill" class="bar-fill"></div>
+          <span id="hp-text" class="bar-text">HP: 1000/1000</span>
+        </div>
+        <div class="bar-container">
+          <div id="en-fill" class="bar-fill"></div>
+          <span id="en-text" class="bar-text">EN: 500/500</span>
+        </div>
+      </div>
+      <div id="weapon-info">
+        <h2 id="weapon-name">BEAM RIFLE</h2>
+        <h3 id="weapon-status">READY</h3>
+      </div>
+    </div>
+  </body>
+</html>
